@@ -31,6 +31,10 @@ use Thelia\Form\BaseForm;
  * change is enforced by {@see \ProductStatus\Service\ProductStatusService::save()}.
  * The back-office template marks the field read-only when editing a protected
  * status, purely as a usability hint.
+ *
+ * Labels and help texts are translated here, in the module domain: translation_domain
+ * false keeps the form theme from translating them a second time in its own domain
+ * (the default-twig back-office turns « Label » into « Libellé »).
  */
 class StatusForm extends BaseForm
 {
@@ -42,6 +46,7 @@ class StatusForm extends BaseForm
             ->add('code', TextType::class, [
                 'required' => true,
                 'constraints' => [new NotBlank()],
+                'translation_domain' => false,
                 'label' => $translator->trans('The status code', [], ProductStatus::DOMAIN_NAME),
                 'label_attr' => [
                     'help' => $translator->trans('It must be unique', [], ProductStatus::DOMAIN_NAME),
@@ -50,6 +55,7 @@ class StatusForm extends BaseForm
             ->add('admin_title', TextType::class, [
                 'required' => false,
                 'constraints' => [new Length(max: 255)],
+                'translation_domain' => false,
                 'label' => $translator->trans('The status title', [], ProductStatus::DOMAIN_NAME),
                 'label_attr' => [
                     'help' => $translator->trans('Shown in the back office only', [], ProductStatus::DOMAIN_NAME),
@@ -58,6 +64,7 @@ class StatusForm extends BaseForm
             ->add('title', TextType::class, [
                 'required' => true,
                 'constraints' => [new NotBlank(), new Length(max: 255)],
+                'translation_domain' => false,
                 'label' => $translator->trans('The status label', [], ProductStatus::DOMAIN_NAME),
                 'label_attr' => [
                     'help' => $translator->trans('Label of the status. Will be displayed in frontOffice', [], ProductStatus::DOMAIN_NAME),
@@ -65,6 +72,7 @@ class StatusForm extends BaseForm
             ])
             ->add('description', TextareaType::class, [
                 'required' => false,
+                'translation_domain' => false,
                 'label' => $translator->trans('The status description', [], ProductStatus::DOMAIN_NAME),
                 'label_attr' => [
                     'help' => $translator->trans('The text displayed in frontOffice', [], ProductStatus::DOMAIN_NAME),
@@ -73,6 +81,7 @@ class StatusForm extends BaseForm
             ->add('color', ColorType::class, [
                 'required' => true,
                 'constraints' => [new NotBlank()],
+                'translation_domain' => false,
                 'label' => $translator->trans('Status color', [], ProductStatus::DOMAIN_NAME),
                 'label_attr' => [
                     'help' => $translator->trans('Choose a color', [], ProductStatus::DOMAIN_NAME),
