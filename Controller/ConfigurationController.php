@@ -86,6 +86,9 @@ class ConfigurationController extends BaseAdminController
     /**
      * The translation is written in the edit language ({@see EditionLocaleResolver}), the
      * one the configuration screen was rendered in, never in the admin interface language.
+     *
+     * The back-office title is passed only when the form posted its field: a configuration
+     * template overridden before 3.2.0 has none, and saving from it keeps the stored title.
      */
     private function saveStatus(
         BaseForm $form,
@@ -100,6 +103,7 @@ class ConfigurationController extends BaseAdminController
         try {
             $validForm = $this->validateForm($form);
             $data = $validForm->getData();
+            $postedFields = $this->getRequest()->request->all(StatusForm::getName());
 
             $productStatusService->save(
                 id: $id,
@@ -108,7 +112,7 @@ class ConfigurationController extends BaseAdminController
                 title: (string) $data['title'],
                 description: '' !== (string) $data['description'] ? (string) $data['description'] : null,
                 locale: $editionLocaleResolver->resolveLocale($this->getRequest()),
-                adminTitle: (string) ($data['admin_title'] ?? ''),
+                adminTitle: \array_key_exists('admin_title', $postedFields) ? (string) $data['admin_title'] : null,
             );
 
             return $this->generateSuccessRedirect($form) ?? $this->generateRedirect($fallbackUrl);

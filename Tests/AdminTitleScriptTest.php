@@ -51,6 +51,7 @@ final class AdminTitleScriptTest extends IntegrationTestCase
     public function testActivationAddsTheColumnFilledWithTheTitlesThenLeavesItAlone(): void
     {
         $connection = $this->getPropelConnection();
+        $saleLabelBefore = $this->label('sale', 'fr_FR');
         // A shop label on a protected status, and a status of the shop's own.
         $connection->exec("UPDATE product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id SET translation.title = 'BON PLAN' WHERE status.code = 'sale' AND translation.locale = 'fr_FR'");
         $connection->exec("INSERT INTO product_status (id, protected, color, code, created_at, updated_at) VALUES (9001, 0, '#000000', 'shop-status', NOW(), NOW())");
@@ -75,8 +76,50 @@ final class AdminTitleScriptTest extends IntegrationTestCase
             self::assertSame('Edited since', $this->adminTitle('shop-status', 'fr_FR'), 'A later activation overwrites nothing.');
         } finally {
             $connection->exec('DELETE FROM product_status WHERE id = 9001');
-            $connection->exec("UPDATE product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id SET translation.title = 'Soldes' WHERE status.code = 'sale' AND translation.locale = 'fr_FR'");
+            $connection
+                ->prepare("UPDATE product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id SET translation.title = :label WHERE status.code = 'sale' AND translation.locale = 'fr_FR'")
+                ->execute([':label' => $saleLabelBefore]);
         }
+    }
+
+    /**
+     * The back-office titles the upgrade gives the protected statuses are the ones a new
+     * installation inserts: both scripts carry them, this keeps them equal.
+     */
+    public function testTheUpgradeGivesTheProtectedStatusesTheBackOfficeTitlesOfANewInstallation(): void
+    {
+        $installation = (string) file_get_contents(\dirname(__DIR__).'/Config/TheliaMain.sql');
+        $upgrade = (string) file_get_contents(\dirname(__DIR__).'/Config/update/3.2.0.sql');
+
+        preg_match_all("/^\\((\\d+), 1, '#[0-9a-f]{6}', '([a-z]+)'/m", $installation, $statuses, \PREG_SET_ORDER);
+        $codeById = array_column($statuses, 2, 1);
+        self::assertCount(4, $codeById);
+
+        preg_match_all("/^\\((\\d+), '([a-z]{2}_[A-Z]{2})', '((?:[^']|'')*)', '((?:[^']|'')*)', /m", $installation, $translations, \PREG_SET_ORDER);
+        $installed = [];
+        foreach ($translations as [, $id, $locale, $title, $adminTitle]) {
+            self::assertSame($title, $adminTitle, 'A new installation gives each protected status its title as back-office title.');
+            $installed[$codeById[$id].' '.$locale] = str_replace("''", "'", $adminTitle);
+        }
+
+        preg_match_all("/SELECT ''([a-z]+)''(?: AS `code`)?, ''([a-z]{2}_[A-Z]{2})''(?: AS `locale`)?, ''((?:[^']|'''')*)''/", $upgrade, $seeded, \PREG_SET_ORDER);
+        $upgraded = [];
+        foreach ($seeded as [, $code, $locale, $adminTitle]) {
+            $upgraded[$code.' '.$locale] = str_replace("''''", "'", $adminTitle);
+        }
+
+        ksort($installed);
+        ksort($upgraded);
+        self::assertCount(20, $installed);
+        self::assertSame($installed, $upgraded);
+    }
+
+    private function label(string $code, string $locale): string
+    {
+        $statement = $this->getPropelConnection()->prepare('SELECT translation.title FROM product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id WHERE status.code = :code AND translation.locale = :locale');
+        $statement->execute([':code' => $code, ':locale' => $locale]);
+
+        return (string) $statement->fetchColumn();
     }
 
     private function adminTitle(string $code, string $locale): ?string

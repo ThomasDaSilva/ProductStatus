@@ -24,6 +24,10 @@ the oldest one of each product (the one the 2.x line displayed), then adds a uni
 nothing once the index exists. The upgrade from 2.x and every activation also clean the stored
 descriptions with the rules of `save()`.
 
+To upgrade, update the package then run `php bin/console module:refresh` before serving pages: the
+code reads the columns of the new version as soon as it is deployed, and `module:refresh` plays the
+update scripts below.
+
 `Config/update/3.2.0.sql` adds the `product_status_i18n.admin_title` column and fills each translation
 with its title, so that every status starts with a back-office title; the four protected statuses, found
 by code, get the translated back-office titles of a new installation instead (`sale`: « Soldes »,
@@ -113,7 +117,13 @@ badge on top of the page links to the configuration screen.
 - The configuration screen calls the title « Label » and lists Code, Title, Label; the button of the edit
   window reads « Save ».
 - `ProductStatusView::$adminTitle`, and `ProductStatusService::save()` takes the back-office title as an
-  optional last argument.
+  optional last argument. The configuration screen passes it only when its form posts the field: a
+  configuration template overridden before 3.2.0 keeps the stored back-office titles.
+- Translation keys of the `productstatus` domain: `The status name` becomes `The status label`, `Title of
+  the status. Will be displayed in frontOffice` becomes `Label of the status. Will be displayed in
+  frontOffice`, `The status title is required` becomes `The status label is required`; `The status
+  title`, `Shown in the back office only`, `Title`, `Label` and `Save` are new. A shop that overrides
+  the old keys moves its translations to the new ones.
 
 ## Changes in 3.1.0
 

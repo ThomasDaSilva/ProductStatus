@@ -80,6 +80,37 @@ final class ConfigurationControllerTest extends IntegrationTestCase
         self::assertNull(ProductStatusI18nQuery::create()->filterById($statusId)->filterByLocale('fr_FR')->findOne()?->getAdminTitle());
     }
 
+    public function testAFormWithoutTheBackOfficeTitleFieldKeepsTheStoredOne(): void
+    {
+        $editLang = $this->lang('en_US');
+
+        $dispatcher = static::getContainer()->get('event_dispatcher');
+        self::assertInstanceOf(EventDispatcherInterface::class, $dispatcher);
+        $statusId = (new ProductStatusService($dispatcher))->save(null, 'restock', '#aabbcc', 'Restock', null, 'en_US', 'Back in stock soon');
+
+        $session = new Session(new MockArraySessionStorage());
+        $session->setAdminUser($this->createFixtureFactory()->admin());
+        $session->setAdminEditionLang($editLang);
+
+        // As a configuration template overridden before 3.2.0 posts it: no admin_title field.
+        $request = Request::create('/admin/module/ProductStatus/status/'.$statusId, 'POST');
+        $request->setSession($session);
+        $request->request->set('productstatus_status', [
+            'code' => 'restock',
+            'title' => 'Restock, edited',
+            'description' => '',
+            'color' => '#aabbcc',
+            '_token' => $this->csrfToken($request, 'productstatus_status'),
+        ]);
+
+        $response = $this->handleAsMainRequest($request);
+
+        self::assertSame(302, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame([], $session->getFlashBag()->peek('danger'));
+        self::assertSame('Restock, edited', $this->title($statusId, 'en_US'));
+        self::assertSame('Back in stock soon', ProductStatusI18nQuery::create()->filterById($statusId)->filterByLocale('en_US')->findOne()?->getAdminTitle());
+    }
+
     /**
      * IntegrationTestCase pushes a synthetic request: it is taken off the stack while the
      * kernel handles this one, so that this request is the main request the controller reads.
