@@ -58,26 +58,26 @@ INSERT IGNORE INTO `product_status` (`id`, `protected`, `color`, `code`, `create
 (3, 1, '#986dff', 'sale', NOW(), NOW()),
 (4, 1, '#2c75ff', 'oddment', NOW(), NOW());
 
-INSERT IGNORE INTO `product_status_i18n` (`id`, `locale`, `title`, `description`) VALUES
-(1, 'fr_FR', 'Normal', 'statut normal de l''article'),
-(2, 'fr_FR', 'Arrêté', 'article qui ne sera plus produit'),
-(3, 'fr_FR', 'Soldes', 'article remisé'),
-(4, 'fr_FR', 'Fin de série', 'échange de taille possible dans la limite des stocks disponibles. Il n''y aura pas de réassort'),
-(1, 'en_US', 'Normal', 'normal status of the product'),
-(2, 'en_US', 'Discontinued', 'this product will not be made anymore'),
-(3, 'en_US', 'Sale', 'clearance sale'),
-(4, 'en_US', 'Oddment', 'exchange available within the limits of available sizes'),
-(1, 'de_DE', 'Normal', 'normaler Status des Artikels'),
-(2, 'de_DE', 'Eingestellt', 'dieser Artikel wird nicht mehr hergestellt'),
-(3, 'de_DE', 'Ausverkauf', 'reduzierter Artikel'),
-(4, 'de_DE', 'Restposten', 'Größentausch im Rahmen der verfügbaren Bestände möglich. Es gibt keine Nachlieferung'),
-(1, 'es_ES', 'Normal', 'estado normal del producto'),
-(2, 'es_ES', 'Interrumpido', 'este artículo no se producirá'),
-(3, 'es_ES', 'Ventas', 'ventas'),
-(4, 'es_ES', 'Remanente', 'intercambio posible dentro de los límites de los tamaños disponibles'),
-(1, 'it_IT', 'Normale', 'stato normale dell''articolo'),
-(2, 'it_IT', 'Smettere', 'questo articolo non sarà più prodotto'),
-(3, 'it_IT', 'Saldi', 'saldi'),
-(4, 'it_IT', 'Fine serie', 'cambio taglia possibile nei limiti delle scorte disponibili. Non ci sarà rifornimento');
+INSERT IGNORE INTO `product_status_i18n` (`id`, `locale`, `title`, `admin_title`, `description`) VALUES
+(1, 'fr_FR', 'Normal', 'Normal', 'statut normal de l''article'),
+(2, 'fr_FR', 'Arrêté', 'Arrêté', 'article qui ne sera plus produit'),
+(3, 'fr_FR', 'Soldes', 'Soldes', 'article remisé'),
+(4, 'fr_FR', 'Fin de série', 'Fin de série', 'échange de taille possible dans la limite des stocks disponibles. Il n''y aura pas de réassort'),
+(1, 'en_US', 'Normal', 'Normal', 'normal status of the product'),
+(2, 'en_US', 'Discontinued', 'Discontinued', 'this product will not be made anymore'),
+(3, 'en_US', 'Sale', 'Sale', 'clearance sale'),
+(4, 'en_US', 'Oddment', 'Oddment', 'exchange available within the limits of available sizes'),
+(1, 'de_DE', 'Normal', 'Normal', 'normaler Status des Artikels'),
+(2, 'de_DE', 'Eingestellt', 'Eingestellt', 'dieser Artikel wird nicht mehr hergestellt'),
+(3, 'de_DE', 'Ausverkauf', 'Ausverkauf', 'reduzierter Artikel'),
+(4, 'de_DE', 'Restposten', 'Restposten', 'Größentausch im Rahmen der verfügbaren Bestände möglich. Es gibt keine Nachlieferung'),
+(1, 'es_ES', 'Normal', 'Normal', 'estado normal del producto'),
+(2, 'es_ES', 'Interrumpido', 'Interrumpido', 'este artículo no se producirá'),
+(3, 'es_ES', 'Ventas', 'Ventas', 'ventas'),
+(4, 'es_ES', 'Remanente', 'Remanente', 'intercambio posible dentro de los límites de los tamaños disponibles'),
+(1, 'it_IT', 'Normale', 'Normale', 'stato normale dell''articolo'),
+(2, 'it_IT', 'Smettere', 'Smettere', 'questo articolo non sarà più prodotto'),
+(3, 'it_IT', 'Saldi', 'Saldi', 'saldi'),
+(4, 'it_IT', 'Fine serie', 'Fine serie', 'cambio taglia possibile nei limiti delle scorte disponibili. Non ci sarà rifornimento');
 
 SET FOREIGN_KEY_CHECKS = 1;

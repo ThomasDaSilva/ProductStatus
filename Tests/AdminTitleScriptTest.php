@@ -19,7 +19,7 @@ use Thelia\Test\IntegrationTestCase;
 
 /**
  * Plays the back-office title script on a translation table shaped as 3.1 left it (no
- * admin_title column). DDL commits implicitly: this test runs outside any transaction and
+ * admin_title column): the column is added and filled with the titles once. DDL commits implicitly: this test runs outside any transaction and
  * puts the column back itself.
  *
  * Runs on the test database of the project (`php bin/test-prepare`), never on the shop's.
@@ -47,17 +47,23 @@ final class AdminTitleScriptTest extends IntegrationTestCase
         parent::tearDown();
     }
 
-    public function testActivationAddsTheColumnOnceAndKeepsTheTranslations(): void
+    public function testActivationAddsTheColumnFilledWithTheTitlesThenLeavesItAlone(): void
     {
         $connection = $this->getPropelConnection();
         $titlesBefore = $this->titles();
         $connection->exec('ALTER TABLE product_status_i18n DROP COLUMN admin_title');
 
         (new ProductStatus())->postActivation($connection);
-        (new ProductStatus())->postActivation($connection);
 
         self::assertTrue($this->adminTitleColumnExists());
         self::assertSame($titlesBefore, $this->titles());
+        self::assertSame([], $this->rowsWhoseAdminTitleIsNotTheTitle(), 'Each translation gets its title as back-office title.');
+
+        $connection->exec("UPDATE product_status_i18n SET admin_title = 'Edited since' WHERE id = 1 AND locale = 'en_US'");
+        (new ProductStatus())->postActivation($connection);
+
+        self::assertSame(['1 en_US'], $this->rowsWhoseAdminTitleIsNotTheTitle(), 'A later activation overwrites nothing.');
+        $connection->exec("UPDATE product_status_i18n SET admin_title = title WHERE id = 1 AND locale = 'en_US'");
     }
 
     private function adminTitleColumnExists(): bool
@@ -65,6 +71,16 @@ final class AdminTitleScriptTest extends IntegrationTestCase
         return (int) $this->getPropelConnection()
             ->query('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = \'product_status_i18n\' AND column_name = \'admin_title\'')
             ->fetchColumn() > 0;
+    }
+
+    /**
+     * @return list<string> "<id> <locale>" of each translation whose back-office title differs from its title
+     */
+    private function rowsWhoseAdminTitleIsNotTheTitle(): array
+    {
+        return $this->getPropelConnection()
+            ->query('SELECT CONCAT(id, \' \', locale) FROM product_status_i18n WHERE NOT (admin_title <=> NULLIF(title, \'\')) ORDER BY id, locale')
+            ->fetchAll(\PDO::FETCH_COLUMN);
     }
 
     /**

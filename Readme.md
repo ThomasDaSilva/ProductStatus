@@ -24,8 +24,11 @@ the oldest one of each product (the one the 2.x line displayed), then adds a uni
 nothing once the index exists. The upgrade from 2.x and every activation also clean the stored
 descriptions with the rules of `save()`.
 
-`Config/update/3.2.0.sql` adds the `product_status_i18n.admin_title` column. It runs on the upgrade from
-an earlier version and at every activation, and does nothing once the column exists.
+`Config/update/3.2.0.sql` adds the `product_status_i18n.admin_title` column and fills each translation
+with its title, so that every status starts with a back-office title. It runs on the upgrade from an
+earlier version and at every activation, before the installation script, and does nothing once the
+column exists: a back-office title edited since is never overwritten. The four protected statuses of a
+new installation get their titles as back-office titles as well.
 
 ## Usage
 
@@ -102,7 +105,8 @@ badge on top of the page links to the configuration screen.
 ## Changes in 3.2.0
 
 - A translated back-office title (`admin_title`), optional, entered on the configuration screen and shown
-  in its list and in the status select of the product edit page. It is never displayed on the shop nor
+  in its list and in the status select of the product edit page. The upgrade fills it with the title of
+  each translation. It is never displayed on the shop nor
   exposed by the API: the title stays the label of the status there.
 - The configuration screen calls the title « Label » and lists Code, Title, Label; the button of the edit
   window reads « Save ».
