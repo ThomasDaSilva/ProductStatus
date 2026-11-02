@@ -76,6 +76,7 @@ class HookManager extends BaseHook
             $editForms[$status->id] = $this->withIdPrefix(
                 $this->formFactory->createForm(StatusForm::class, data: [
                     'code' => $status->code,
+                    'admin_title' => $translations[$status->id]['admin_title'] ?? '',
                     'title' => $translations[$status->id]['title'] ?? '',
                     'description' => $translations[$status->id]['description'] ?? '',
                     'color' => $status->color,

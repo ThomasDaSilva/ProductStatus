@@ -108,6 +108,7 @@ class ConfigurationController extends BaseAdminController
                 title: (string) $data['title'],
                 description: '' !== (string) $data['description'] ? (string) $data['description'] : null,
                 locale: $editionLocaleResolver->resolveLocale($this->getRequest()),
+                adminTitle: (string) ($data['admin_title'] ?? ''),
             );
 
             return $this->generateSuccessRedirect($form) ?? $this->generateRedirect($fallbackUrl);

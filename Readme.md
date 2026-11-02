@@ -1,7 +1,8 @@
 # Product Status
 
-Assigns one status (code, color, title and description translated) to each product. A product without
-status reads as the protected `normal` status. Four statuses are protected and cannot be deleted:
+Assigns one status (code, color, and translated title, back-office title and description) to each
+product. The title is the label displayed on the shop; the back-office title, optional, is shown in the
+administration only. A product without status reads as the protected `normal` status. Four statuses are protected and cannot be deleted:
 `normal`, `discontinued`, `sale`, `oddment`.
 
 Thelia 3.2 or later. The 2.x line of this module is for Thelia 2.
@@ -9,7 +10,7 @@ Thelia 3.2 or later. The 2.x line of this module is for Thelia 2.
 ## Installation
 
 ```
-composer require thelia/product-status-module:^3.0
+composer require thelia/product-status-module:^3.2
 php bin/console module:refresh
 php bin/console module:activate ProductStatus
 ```
@@ -22,6 +23,9 @@ the oldest one of each product (the one the 2.x line displayed), then adds a uni
 `product_product_status.product_id`. It runs on the upgrade from 2.x and at every activation, and does
 nothing once the index exists. The upgrade from 2.x and every activation also clean the stored
 descriptions with the rules of `save()`.
+
+`Config/update/3.2.0.sql` adds the `product_status_i18n.admin_title` column. It runs on the upgrade from
+an earlier version and at every activation, and does nothing once the column exists.
 
 ## Usage
 
@@ -36,8 +40,8 @@ descriptions with the rules of `save()`.
 | `all(string $locale): array` | every status, ordered by id |
 | `ids(): array` | the id of every status, ordered by id, without reading any translation |
 | `assign(int $productId, int $statusId): void` | replaces the status of the product; dispatches `ProductStatusEvents::PRODUCT_STATUS_CHANGED` only when it changes |
-| `save(?int $id, string $code, string $color, string $title, ?string $description, string $locale): int` | creates or updates a status; the code is lower-cased, unique and a slug (`a-z`, `0-9`, `-`, `_`) when it is new or changed (a 2.x code with spaces can be kept as is), the code of a protected status cannot change, the color is `#rgb` or `#rrggbb` (stored `#rrggbb`), the description keeps only `<b><strong><i><em><a><br>` without any attribute but the `href` of an http(s), mailto or relative link |
-| `translations(string $locale): array` | titles and descriptions stored in `$locale`, without fallback |
+| `save(?int $id, string $code, string $color, string $title, ?string $description, string $locale, ?string $adminTitle = null): int` | creates or updates a status; `$adminTitle` null keeps the stored back-office title, an empty string removes it; the code is lower-cased, unique and a slug (`a-z`, `0-9`, `-`, `_`) when it is new or changed (a 2.x code with spaces can be kept as is), the code of a protected status cannot change, the color is `#rgb` or `#rrggbb` (stored `#rrggbb`), the description keeps only `<b><strong><i><em><a><br>` without any attribute but the `href` of an http(s), mailto or relative link |
+| `translations(string $locale): array` | titles, back-office titles (`admin_title`) and descriptions stored in `$locale`, without fallback |
 | `delete(int $id): void` | refuses a protected status; the products of the deleted status read `normal` again and each dispatches `PRODUCT_STATUS_CHANGED` |
 
 Business errors are `ProductStatus\Exception\ProductStatusException` (a `\DomainException`); an unknown
@@ -84,8 +88,8 @@ that language only, empty when a status has no translation there.
 The status of a product is chosen in the General tab of the product edit page, under the brand, and
 saved with the product by its Save button (the `product.modification.form-right.bottom` hook of the
 default-twig back-office, first of the module blocks there, and a field added to the
-`thelia_product_modification` form). The select lists each status as its title in the edit language of the
-page followed by its code, which keeps apart statuses sharing a title; the badge above it shows the saved
+`thelia_product_modification` form). The select lists each status as its back-office title in the edit
+language of the page, its title without one, followed by its code, which keeps apart statuses sharing a title; the badge above it shows the saved
 status. Saving the status shown unchanged writes nothing.
 
 It needs the update permission of the module, checked when the form is built and again before writing.
@@ -94,6 +98,16 @@ page opened before the permission was withdrawn) is refused as a whole, product 
 form carrying a status deleted since the page was displayed. The product is saved before its status: a
 status deleted between that check and the write leaves a warning and the rest of the product saved. The
 badge on top of the page links to the configuration screen.
+
+## Changes in 3.2.0
+
+- A translated back-office title (`admin_title`), optional, entered on the configuration screen and shown
+  in its list and in the status select of the product edit page. It is never displayed on the shop nor
+  exposed by the API: the title stays the label of the status there.
+- The configuration screen calls the title « Label » and lists Code, Title, Label; the button of the edit
+  window reads « Save ».
+- `ProductStatusView::$adminTitle`, and `ProductStatusService::save()` takes the back-office title as an
+  optional last argument.
 
 ## Changes in 3.1.0
 

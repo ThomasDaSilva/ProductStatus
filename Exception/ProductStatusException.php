@@ -35,7 +35,7 @@ final class ProductStatusException extends \DomainException implements ProductSt
 
     public static function titleRequired(): self
     {
-        return new self('The status title is required', 'The status title is required.');
+        return new self('The status label is required', 'The status label is required.');
     }
 
     public static function invalidColor(string $color): self

@@ -93,9 +93,10 @@ final readonly class ProductStatusService
     }
 
     /**
-     * Titles and descriptions as stored in $locale, empty when a status has none there.
+     * Titles, back-office titles and descriptions as stored in $locale, empty when a status has
+     * none there.
      *
-     * @return array<int, array{title: string, description: string}> keyed by status id
+     * @return array<int, array{title: string, admin_title: string, description: string}> keyed by status id
      */
     public function translations(string $locale): array
     {
@@ -144,15 +145,18 @@ final readonly class ProductStatusService
     }
 
     /**
-     * Creates ($id null) or updates a status and its translation in $locale.
+     * Creates ($id null) or updates a status and its translation in $locale. The title is the
+     * label displayed on the shop; $adminTitle, optional, is shown in the back office only:
+     * null leaves the stored one untouched, an empty string removes it.
      *
      * @throws ProductStatusException        when the code or the title is empty, the color invalid, a new or changed code not a slug, the code already used or changed on a protected status
      * @throws UnknownProductStatusException when $id matches no status
      */
-    public function save(?int $id, string $code, string $color, string $title, ?string $description, string $locale): int
+    public function save(?int $id, string $code, string $color, string $title, ?string $description, string $locale, ?string $adminTitle = null): int
     {
         $code = mb_strtolower(trim($code));
         $title = trim($title);
+        $adminTitle = null === $adminTitle ? null : trim($adminTitle);
 
         $normalizedColor = ProductStatusColor::normalize($color);
 
@@ -195,8 +199,13 @@ final readonly class ProductStatusService
             ->setColor($normalizedColor)
             ->setLocale($locale)
             ->setTitle($title)
-            ->setDescription('' === $description ? null : $description)
-            ->save();
+            ->setDescription('' === $description ? null : $description);
+
+        if (null !== $adminTitle) {
+            $status->setAdminTitle('' === $adminTitle ? null : $adminTitle);
+        }
+
+        $status->save();
 
         ProductStatusMemo::clear();
 

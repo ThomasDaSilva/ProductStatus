@@ -209,9 +209,30 @@ final class ProductStatusServiceTest extends IntegrationTestCase
     {
         $statusId = $this->service->save(null, 'english-only', '#000000', 'English only', 'Only in English', 'en_US');
 
-        self::assertSame(['title' => 'English only', 'description' => 'Only in English'], $this->service->translations('en_US')[$statusId]);
+        self::assertSame(['title' => 'English only', 'admin_title' => '', 'description' => 'Only in English'], $this->service->translations('en_US')[$statusId]);
         self::assertArrayNotHasKey($statusId, $this->service->translations('fr_FR'));
         self::assertSame('English only', $this->view($statusId, 'fr_FR')->title, 'The list still shows the fallback.');
+    }
+
+    public function testBackOfficeTitleIsTranslatedOptionalAndKeptWhenNotGiven(): void
+    {
+        $statusId = $this->service->save(null, 'winter-sale', '#000000', 'Sale', null, 'en_US', ' Winter clearance ');
+        $this->service->save($statusId, 'winter-sale', '#000000', 'Soldes', null, 'fr_FR', 'Soldes d\'hiver');
+
+        self::assertSame('Winter clearance', $this->view($statusId, 'en_US')->adminTitle);
+        self::assertSame('Soldes d\'hiver', $this->view($statusId, 'fr_FR')->adminTitle);
+        self::assertSame('Sale', $this->view($statusId, 'en_US')->title, 'The label is left as it is.');
+
+        $this->service->save($statusId, 'winter-sale', '#000000', 'Sale, edited', null, 'en_US');
+        self::assertSame('Winter clearance', $this->service->translations('en_US')[$statusId]['admin_title'], 'Not given, the back-office title is kept.');
+
+        $this->service->save($statusId, 'winter-sale', '#000000', 'Sale', null, 'en_US', '');
+        self::assertSame('', $this->service->translations('en_US')[$statusId]['admin_title']);
+        self::assertNull(ProductStatusI18nQuery::create()->filterById($statusId)->filterByLocale('en_US')->findOne()?->getAdminTitle(), 'An empty back-office title is stored as NULL.');
+        self::assertSame('Soldes d\'hiver', $this->view($statusId, 'fr_FR')->adminTitle, 'Other languages are left as they are.');
+
+        $withoutAdminTitle = $this->service->save(null, 'no-admin-title', '#000000', 'Label only', null, 'en_US');
+        self::assertNull($this->view($withoutAdminTitle, 'en_US')->adminTitle);
     }
 
     public function testThemeHookPrintsTheStatusOnTheProductPageExceptNormal(): void

@@ -94,6 +94,7 @@ final readonly class ProductStatusReader
 
         $sql = 'SELECT ps.id, ps.code, ps.color, ps.protected,
                 COALESCE(NULLIF(requested.title, \'\'), fallback.title) AS title,
+                COALESCE(NULLIF(requested.admin_title, \'\'), fallback.admin_title) AS admin_title,
                 COALESCE(NULLIF(requested.description, \'\'), fallback.description) AS description
             FROM product_status ps
             LEFT JOIN product_status_i18n requested ON requested.id = ps.id AND requested.locale = :locale
@@ -107,7 +108,7 @@ final readonly class ProductStatusReader
 
         $byId = [];
         $default = null;
-        /** @var array{id: int|string, code: ?string, color: ?string, protected: int|string, title: ?string, description: ?string} $row */
+        /** @var array{id: int|string, code: ?string, color: ?string, protected: int|string, title: ?string, admin_title: ?string, description: ?string} $row */
         foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
             $code = (string) $row['code'];
             $view = new ProductStatusView(
@@ -117,6 +118,7 @@ final readonly class ProductStatusReader
                 title: null === $row['title'] || '' === $row['title'] ? $code : $row['title'],
                 description: null === $row['description'] || '' === $row['description'] ? null : $row['description'],
                 protected: 1 === (int) $row['protected'],
+                adminTitle: null === $row['admin_title'] || '' === $row['admin_title'] ? null : $row['admin_title'],
             );
             $byId[$view->id] = $view;
             if (self::DEFAULT_STATUS_CODE === $code) {
@@ -128,22 +130,23 @@ final readonly class ProductStatusReader
     }
 
     /**
-     * Titles and descriptions stored in $locale, without any fallback: an edit form shows
-     * what is written in the edited language, empty when nothing is.
+     * Titles, back-office titles and descriptions stored in $locale, without any fallback: an
+     * edit form shows what is written in the edited language, empty when nothing is.
      *
-     * @return array<int, array{title: string, description: string}> keyed by status id
+     * @return array<int, array{title: string, admin_title: string, description: string}> keyed by status id
      */
     public function translations(string $locale): array
     {
         $rows = ProductStatusI18nQuery::create()
             ->filterByLocale($locale)
-            ->select(['Id', 'Title', 'Description'])
+            ->select(['Id', 'Title', 'AdminTitle', 'Description'])
             ->find();
 
         $translations = [];
         foreach ($rows as $row) {
             $translations[(int) $row['Id']] = [
                 'title' => (string) $row['Title'],
+                'admin_title' => (string) $row['AdminTitle'],
                 'description' => (string) $row['Description'],
             ];
         }

@@ -18,12 +18,14 @@ use ProductStatus\ProductStatus;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Thelia\Core\Translation\Translator;
 use Thelia\Form\BaseForm;
 
 /**
- * Create or edit a product status (code, title, color, description).
+ * Create or edit a product status (code, back-office title, label shown on the shop as the
+ * title, color, description).
  *
  * The code field is always editable here; a protected status refusing a code
  * change is enforced by {@see \ProductStatus\Service\ProductStatusService::save()}.
@@ -45,12 +47,20 @@ class StatusForm extends BaseForm
                     'help' => $translator->trans('It must be unique', [], ProductStatus::DOMAIN_NAME),
                 ],
             ])
+            ->add('admin_title', TextType::class, [
+                'required' => false,
+                'constraints' => [new Length(max: 255)],
+                'label' => $translator->trans('The status title', [], ProductStatus::DOMAIN_NAME),
+                'label_attr' => [
+                    'help' => $translator->trans('Shown in the back office only', [], ProductStatus::DOMAIN_NAME),
+                ],
+            ])
             ->add('title', TextType::class, [
                 'required' => true,
-                'constraints' => [new NotBlank()],
-                'label' => $translator->trans('The status name', [], ProductStatus::DOMAIN_NAME),
+                'constraints' => [new NotBlank(), new Length(max: 255)],
+                'label' => $translator->trans('The status label', [], ProductStatus::DOMAIN_NAME),
                 'label_attr' => [
-                    'help' => $translator->trans('Title of the status. Will be displayed in frontOffice', [], ProductStatus::DOMAIN_NAME),
+                    'help' => $translator->trans('Label of the status. Will be displayed in frontOffice', [], ProductStatus::DOMAIN_NAME),
                 ],
             ])
             ->add('description', TextareaType::class, [

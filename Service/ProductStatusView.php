@@ -23,6 +23,8 @@ final readonly class ProductStatusView
         public string $title,
         public ?string $description,
         public bool $protected,
+        // Translated title shown in the back office only; the title is the label of the shop.
+        public ?string $adminTitle = null,
     ) {
     }
 }

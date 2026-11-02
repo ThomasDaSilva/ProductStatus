@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `product_status_i18n`
     `id` INTEGER NOT NULL,
     `locale` VARCHAR(5) DEFAULT 'en_US' NOT NULL,
     `title` VARCHAR(255),
+    `admin_title` VARCHAR(255),
     `description` LONGTEXT,
     `chapo` TEXT,
     `postscriptum` TEXT,
