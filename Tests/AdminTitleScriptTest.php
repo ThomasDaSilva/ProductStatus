@@ -19,7 +19,8 @@ use Thelia\Test\IntegrationTestCase;
 
 /**
  * Plays the back-office title script on a translation table shaped as 3.1 left it (no
- * admin_title column): the column is added and filled with the titles once. DDL commits implicitly: this test runs outside any transaction and
+ * admin_title column): the column is added once, filled with the titles, the four protected
+ * statuses getting the back-office titles of a new installation. DDL commits implicitly: this test runs outside any transaction and
  * puts the column back itself.
  *
  * Runs on the test database of the project (`php bin/test-prepare`), never on the shop's.
@@ -50,20 +51,49 @@ final class AdminTitleScriptTest extends IntegrationTestCase
     public function testActivationAddsTheColumnFilledWithTheTitlesThenLeavesItAlone(): void
     {
         $connection = $this->getPropelConnection();
-        $titlesBefore = $this->titles();
-        $connection->exec('ALTER TABLE product_status_i18n DROP COLUMN admin_title');
+        // A shop label on a protected status, and a status of the shop's own.
+        $connection->exec("UPDATE product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id SET translation.title = 'BON PLAN' WHERE status.code = 'sale' AND translation.locale = 'fr_FR'");
+        $connection->exec("INSERT INTO product_status (id, protected, color, code, created_at, updated_at) VALUES (9001, 0, '#000000', 'shop-status', NOW(), NOW())");
+        $connection->exec("INSERT INTO product_status_i18n (id, locale, title) VALUES (9001, 'fr_FR', 'Statut maison')");
 
-        (new ProductStatus())->postActivation($connection);
+        try {
+            $titlesBefore = $this->titles();
+            $connection->exec('ALTER TABLE product_status_i18n DROP COLUMN admin_title');
 
-        self::assertTrue($this->adminTitleColumnExists());
-        self::assertSame($titlesBefore, $this->titles());
-        self::assertSame([], $this->rowsWhoseAdminTitleIsNotTheTitle(), 'Each translation gets its title as back-office title.');
+            (new ProductStatus())->postActivation($connection);
 
-        $connection->exec("UPDATE product_status_i18n SET admin_title = 'Edited since' WHERE id = 1 AND locale = 'en_US'");
-        (new ProductStatus())->postActivation($connection);
+            self::assertTrue($this->adminTitleColumnExists());
+            self::assertSame($titlesBefore, $this->titles(), 'The labels are left as they are.');
+            self::assertSame('Soldes', $this->adminTitle('sale', 'fr_FR'), 'A protected status gets the back-office title of a new installation.');
+            self::assertSame('Ausverkauf', $this->adminTitle('sale', 'de_DE'));
+            self::assertSame('Statut maison', $this->adminTitle('shop-status', 'fr_FR'), 'Another status gets its label.');
+            self::assertSame([$this->statusId('sale').' fr_FR'], $this->rowsWhoseAdminTitleIsNotTheTitle());
 
-        self::assertSame(['1 en_US'], $this->rowsWhoseAdminTitleIsNotTheTitle(), 'A later activation overwrites nothing.');
-        $connection->exec("UPDATE product_status_i18n SET admin_title = title WHERE id = 1 AND locale = 'en_US'");
+            $connection->exec("UPDATE product_status_i18n SET admin_title = 'Edited since' WHERE id = 9001 AND locale = 'fr_FR'");
+            (new ProductStatus())->postActivation($connection);
+
+            self::assertSame('Edited since', $this->adminTitle('shop-status', 'fr_FR'), 'A later activation overwrites nothing.');
+        } finally {
+            $connection->exec('DELETE FROM product_status WHERE id = 9001');
+            $connection->exec("UPDATE product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id SET translation.title = 'Soldes' WHERE status.code = 'sale' AND translation.locale = 'fr_FR'");
+        }
+    }
+
+    private function adminTitle(string $code, string $locale): ?string
+    {
+        $statement = $this->getPropelConnection()->prepare('SELECT translation.admin_title FROM product_status_i18n translation INNER JOIN product_status status ON status.id = translation.id WHERE status.code = :code AND translation.locale = :locale');
+        $statement->execute([':code' => $code, ':locale' => $locale]);
+        $adminTitle = $statement->fetchColumn();
+
+        return false === $adminTitle || null === $adminTitle ? null : (string) $adminTitle;
+    }
+
+    private function statusId(string $code): int
+    {
+        $statement = $this->getPropelConnection()->prepare('SELECT id FROM product_status WHERE code = :code');
+        $statement->execute([':code' => $code]);
+
+        return (int) $statement->fetchColumn();
     }
 
     private function adminTitleColumnExists(): bool
